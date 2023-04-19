@@ -68,6 +68,7 @@ iris %>% nrow()
 #nrow(iris)
 ```
 
+TODO
 The iris dataset has XXX rows. <- replace xxx with the correct number of rows. 
 
 
@@ -81,6 +82,7 @@ iris %>% ncol()
 #ncol(iris)
 ```
 
+TODO
 The iris dataset has XXX columns <- replace xxx with the correct number of columns. 
 
 ## head
