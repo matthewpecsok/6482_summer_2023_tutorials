@@ -1,0 +1,528 @@
+---
+title: "Titanic data exploration markdown"
+author: "Olivia Sheng"
+date: "May 12, 2020"
+output: 
+  html_document:
+    number_sections: yes
+    theme: readable
+    highlight: breezedark
+    toc: yes
+    fig_width: 25
+    fig_height: 15
+editor_options: 
+  chunk_output_type: console
+---
+# Set up, data import, inspection and transformation
+## Set up, data import and inspection
+
+```{r Set up, data import and inspection}
+# The sinking of the RMS Titanic is one of the most infamous shipwrecks in history.
+# On April 15, 1912, during her maiden voyage, the Titanic sank after colliding with 
+# an iceberg, killing 1502 out of 2224 passengers and crew.
+# This sensational tragedy shocked the international community and led to better 
+# safety regulations for ships.One of the reasons that the shipwreck led to such 
+# loss of life was that there were not enough lifeboats for the passengers and crew. 
+# Although there was some element of luck involved in surviving the sinking, 
+# some groups of people such as women, children, and the upper-class 
+# were more likely to survive than others.
+
+# VARIABLE DESCRIPTIONS:
+
+# PassengerID     Unique passenger identifier
+# Survived        Survival (0 = No; 1 = Yes)
+# Pclass          Passenger Class(1 = 1st; 2 = 2nd; 3 = 3rd) (Pclass is a proxy for socio-economic status (SES)
+#                     1st ~ Upper; 2nd ~ Middle; 3rd ~ Lower)
+# Name            Name
+# Sex             Sex
+# Age             Age (Age is in Years; Fractional if Age less than One (1) If the Age is Estimated, it is in the form xx.5)
+# Sibsp           Number of Siblings/Spouses Aboard
+# Parch           Number of Parents/Children Aboard
+# Ticket          Ticket Number
+# Fare            Passenger Fare
+# Cabin           Cabin
+# Embarked        Port of Embarkation (C = Cherbourg; Q = Queenstown; S = Southampton)
+
+
+### ---------------------------------------------------------------------------
+
+### Import a csv file
+library(tictoc) 
+tic()
+
+cloud_wd <- getwd()
+setwd(cloud_wd)
+
+titanic <- read.csv(file = "titanic.train.csv", stringsAsFactors = FALSE)
+
+### Examine the overall data frame
+
+# str() shows the number of observations, and the number, names, types and some values of columns
+
+str(titanic)
+
+## You can retrieve and save the number of rows and number of coloumns of a data frame
+
+nrow(titanic)
+row <- nrow(titanic)
+row
+
+col <- ncol(titanic)
+col
+
+## Show the head and tail rows of a data frame
+
+head(titanic)
+
+titanic[1:6,]
+
+head(titanic, n=1)
+
+titanic[1,]
+
+head(titanic, n=10)
+
+tail(titanic, n = 10)
+
+?head
+
+# summary() shows the mean and the five-number statistics indicating the spread of each column's values
+
+summary(titanic)
+```
+## Data transformation
+Remove unique identifiers from further analysis as they are not interesting without additional feature extractions
+
+```{r Data transformation 1}
+titanic <- titanic[c(-1,-4,-9)]
+```
+Change Survived and other nominal variables to factors
+```{r Data transformation 2}
+titanic$Survived <- factor(titanic$Survived)
+
+titanic$Sex <- factor(titanic$Sex)
+
+titanic$Pclass <- factor(titanic$Pclass)
+
+titanic$Cabin <- factor(titanic$Cabin)
+
+titanic$Embarked <- factor(titanic$Embarked)
+
+str(titanic)
+
+summary(titanic)
+```
+Remove observations with missing Age values. 
+
+This missing data handling approach has the obvious disadvantages of 
+the applicability of the model to data with missing age.
+
+To keep observations with missing Age values require careful imputation of Age missingness. 
+
+The various missing data imputation methods are beyond the knowledge required for this tutorial.
+
+```{r Data transformation 3}
+# Missing values in Age can cause problems. Test the following commands when you have time.
+# var(titanic$Age)
+# mean(titanic$Age)
+# var(titanic[-which(is.na(titanic$Age)), ]$Age)
+# sd(titanic[-which(is.na(titanic$Age)), ]$Age)
+
+# Use which() command to identify and remove observations in which 
+# the Age value is missing or is.na(titanic Age) = TRUE.
+
+titanic <- titanic[-which(is.na(titanic$Age)), ]
+
+?which
+
+summary(titanic)
+```
+
+On the other hand, keeping missing factor levels might be able to lead to meaningful models
+Empty level names of the Cabin and Embarked factors will cause problems in some analysis.
+Other missing factor value imputation remains a good option beyond the scope of this tutorial.
+
+
+```{r Data transformation 4}
+# levels() and sort() with factors
+str(titanic$Cabin)
+
+titanic$Cabin
+
+# str() truncate the display of factor levels. levels() shows all of the factor levels of a factor variable
+
+levels(titanic$Cabin)
+
+?levels
+
+# It is useful to sort the levels based on how many observations contain a factor level.
+# Remember table() that counts how many observations contain a factor level.
+# Use sort to sort factor levels by the count of observations containing a level
+# You can use sort inside barplot()\
+
+table(titanic$Cabin)
+
+sort(table(titanic$Cabin), decreasing = TRUE)
+
+?sort
+
+barplot(sort(table(titanic$Cabin), decreasing = TRUE))
+
+barplot(sort(table(titanic$Cabin), decreasing = FALSE))
+
+# Fixing empty character level names for Cabin and Embarked
+
+levels(titanic$Cabin)[1]
+
+levels(titanic$Cabin)[1] <- "missing"
+
+levels(titanic$Embarked)
+
+barplot(sort(table(titanic$Embarked), decreasing = FALSE))
+
+levels(titanic$Embarked)[1]
+
+levels(titanic$Embarked)[1] <- "missing"
+
+summary(titanic)
+```
+# Understanding numeric variables
+
+Show summary of one or more columns
+```{r Understanding numeric variables}
+summary(titanic$Pclass)
+
+summary(titanic[c("Sex", "Age")])
+
+## obtain the mean, median, max, min and range of a numeric variable
+
+mean(titanic$Age)
+median(titanic$Age)
+range(titanic$Age)
+
+# calculate the difference of the range
+
+max.Age <- max(titanic$Age)
+min.Age <- min(titanic$Age)
+min.Age
+max.Age
+
+range.diff.Age <- max.Age - min.Age
+range.diff.Age
+
+
+# min-max normalization of first observation's Age to a value between zero zna 1
+
+titanic$Age[1]
+
+(titanic$Age[1] - min.Age)/range.diff.Age
+
+# diff() calculates differences between an attribute's values in the referenced record and that in the record following it
+# diff(titanic$Age) 
+# ?diff
+# titanic$Age
+
+# use quantile to calculate the five-number summary for Age
+
+quantile(titanic$Age)
+
+# the 1st percentile and the 99th percentile
+
+quantile(titanic$Age, probs = c(0.01, 0.99))
+
+# quintiles and deciles 
+
+quantile(titanic$Age, seq(from = 0, to = 1, by = 0.20))
+
+quantile(titanic$Age, seq(from = 0, to = 1, by = 0.10))
+
+# boxplot of a numeric variable
+
+boxplot(titanic$Age, main="Boxplot of Age in the titanic data set",
+        ylab="Age")
+
+# practice quantile for another variable - SibSp
+
+quantile(titanic$SibSp)
+
+# the 1st percentile and the 99th percentile
+
+quantile(titanic$SibSp, probs = c(0.01, 0.99))
+
+# quintiles and deciles 
+
+quantile(titanic$SibSp, seq(from = 0, to = 1, by = 0.20))
+
+quantile(titanic$SibSp, seq(from = 0, to = 1, by = 0.10))
+
+# boxplot of a numeric variable
+
+boxplot(titanic$SibSp, main="Boxplot of Sibsp in the titanic data set",
+        ylab="Sibsp")
+?IQR
+
+### IQR = 3rdQaurtile - 1stQuartile
+
+### maxline = 3rdQuartile + 1.5*IQR
+
+### minline = 1stQuartile - 1.5*IQR
+
+### one definition of outliers : value > maxline and value < minline are drawn as circles and dots 
+
+# scatter plot of a numeric variable. It becomes too busy for a large number of observations
+
+plot(titanic$SibSp)
+
+# histograms of a numeric variable
+
+hist(titanic$SibSp, main = "Histogram of Sibsp in the titanic data set",
+     xlab = "Sibsp")
+
+### For a right skewed distribution, the mean is typically greater than the median
+
+hist(titanic$Age, main = "Histogram of Age in the titanic data set",
+     xlab = "Age")
+
+hist(titanic$Fare, main = "Histogram of Fare in the titanic data set",
+     xlab = "Fare")
+
+hist(titanic$Parch, main = "Histogram of Parch  in the titanic data set",
+     xlab = "Parch")
+
+### Search for and understand the meaning of skewed, bimodal and multimodal continuous distributions
+
+## variance and standard deviation of a numeric value
+
+var(titanic$Age)
+
+sd(titanic$Age)
+
+var(titanic$SibSp)
+
+sd(titanic$SibSp)
+```
+# Exploring factor variables
+```{r Explorating factor variables}
+# A factor's distinct values
+
+is.factor(titanic$Survived)
+
+summary(titanic$Survived)
+
+nlevels(titanic$Survived)
+
+str(titanic$Survived)
+
+is.factor(as.character(titanic$Survived))
+
+summary(as.character(titanic$Survived))
+
+# How many of observations have a factor value?
+
+?table
+
+plot(titanic$Survived)
+
+plot(titanic$Survived, main = "Plot of Survived in the titanic data set",
+     xlab = "Survived")
+
+Survived.table <- table(titanic$Survived)
+
+Survived.table
+
+str(Survived.table)
+
+barplot(Survived.table, main = "Plot of Survived in the titanic data set",
+        xlab = "Survived")
+# remember the difference between the input data structures to plot() and barplot()
+
+# compute table proportions
+
+? prop.table
+
+# Run prop.table(titanic$Survived) to see the error in this command
+
+prop.table(Survived.table)
+
+Survived.prop <- prop.table(table(titanic$Survived))
+
+Survived.prop 
+
+## round decimals 
+
+round(Survived.prop, digits = 2)
+
+options(digits = 2)
+
+prop.table(Survived.prop)
+
+###Remeber to get help from Help Pane using "?"
+
+?round
+?options
+```
+# Understand relatioinships of multiple variables
+```{r Understand variable relationships }
+# cor,  boxplot, 2D scatter plot - plot, 3D scatter plot
+
+# scatter plot: two numeric variables
+
+plot(titanic[,5:6])
+plot(titanic$SibSp, titanic$Parch)
+
+### Generate correlation coefficients of two numeric variables in a 2x2 matrix
+# cor(X,Y) lies between -1 and 1. zero means no correlation. 1 or -1 indicates full correlation
+# positive value means positive correlation and negative values mean negative relationships
+# Examine the components in the formulation for correlation coefficients
+# cor(X,Y) = cov(X,Y)/(sd(X)*sd(Y)) 
+# cov(X,Y) = E[X-E(X)]*E[Y-E(Y)]
+
+cov(titanic[,c(5,6)])
+var(titanic[,c(5,6)])
+var(titanic[,5])
+sd(titanic[,5])
+var(titanic[5])
+sd(titanic[,6])
+cor(titanic[c("SibSp", "Parch")])
+cor(titanic[5:6])
+cor(titanic[,5:6])
+?cor
+
+## Generate the correlation matrix of all numeric variables
+
+cor(titanic[4:7])
+
+# Generate 2D scatter plots and correlation coefficients
+
+# Load the psych package. Install it first when necessary.
+
+pairs(titanic[4:7])
+
+library(psych)
+
+pairs.panels(titanic[-1])
+
+pairs.panels(titanic)
+```
+# Examine relationships between numeric variables and factors
+
+##boxplot groups values of a numeric variable based on the values of a factor
+```{r boxplot numeric values by factors}
+boxplot(Age~Survived, data = titanic)
+boxplot(Parch~Survived, data = titanic)
+boxplot(SibSp~Survived, data = titanic)
+boxplot(Fare~Survived, data = titanic)
+```
+## The aggregate function
+```{r Aggregation function}
+# We can use the aggregate command to aggregate a numeric feature by a categorical one.
+
+# The aggregate function has three parameters
+
+# 1. The numeric value, e.g. sales, to be aggregated to find out, e.g., total of sales,
+#   average of sales, number of sales (i.e. orders).
+
+# 2. The set of categories, product_category and sales_region, on which you wish
+#   to aggregate
+
+# 3.The aggregation function (e.g., sum, mean, length) that you wish to use
+
+aggregate(SibSp~Survived, summary, data = titanic)
+
+aggregate(Parch~Survived, summary, data = titanic)
+
+```
+## scatter plot of numeric values and factor values
+```{r Scatter plat of numeric and factor variables}
+plot(titanic$Survived)
+plot(titanic$Age)
+plot(titanic$Age,titanic$Survived)
+
+plot(titanic$SibSp,titanic$Parch, col=titanic$Survived, pch = as.numeric((titanic$Survived)))
+
+with(titanic, plot(titanic$SibSp,titanic$Parch, col=Survived, pch = as.numeric(Survived)))
+
+with(titanic, plot(titanic$SibSp,titanic$Parch, col=Survived, pch = as.numeric(Survived), 
+                   main = "2d scatter plot of titanic data", sub = "SibSp vs Parch"))
+
+
+palette()
+
+legend('topright', legend = levels(titanic$Survived),  col = 1:2, cex = 0.8, pch = 1:2)
+
+```
+## Generate 3D scatterplot
+```{r Generate 3D scatterplot}
+library(scatterplot3d)
+
+scatterplot3d(titanic$Sex,titanic$Age,titanic$SibSp, pch = as.numeric(titanic$Survived), main = "3D scatter plot of titanic data")
+
+legend('topright', legend = levels(titanic$Survived),  cex = 0.8, pch = 1:2)
+
+scatterplot3d(titanic$Fare,titanic$Pclass,titanic$Sex, pch = as.numeric(titanic$Survived), main = "3D scatter plot of titanic data")
+
+legend('topright', legend = levels(titanic$Survived),  cex = 0.8, pch = 1:2)
+
+titanicf <- subset(titanic, Sex == "female")
+summary(titanicf)
+titanicm <- subset(titanic, Sex == "male")
+summary(titanicm)
+
+plot(titanicm$Age,titanicm$SibSp, pch = as.numeric(titanicm$Survived), main = "2D scatter plot of males' SibSp and Age")
+
+legend('topright', legend = levels(titanicf$Survived),  cex = 0.8, pch = 1:2)
+
+plot(titanicf$Fare,titanicf$Pclass, pch = as.numeric(titanicf$Survived), main = "2D scatter plot of titanic females' Pclass vs Fare")
+
+legend('topright', legend = levels(titanicf$Survived),  cex = 0.8, pch = 1:2)
+```
+
+## Parallel plots
+Another parallel plot and parallel coordinate plot to show relationships between numeric variables and factors
+
+load the required libraries - lattice and MASS
+
+Install these package first or use require(lattice) and require(MASS) to install and load them
+
+```{r Generate parallel plots}
+library(lattice)
+
+
+parallelplot(~titanic[-1] | Survived, data = titanic, var.label = TRUE)
+
+parallelplot(~titanic[4:7] | Survived, data = titanic, var.label = TRUE)
+
+parallelplot(~titanic[4:5] | Survived, data = titanic, var.label = TRUE)
+
+parallelplot(~titanic[c(4,6)] | Survived, data = titanic, var.label = TRUE)
+
+parallelplot(~titanic[c(6,7)] | Survived, data = titanic, var.label = TRUE)
+
+parallelplot(~titanic[c(5,6)] | Survived, data = titanic, var.label = TRUE)
+
+
+palette()
+
+# legend() that works for other plots cannot display legend in the parallelplot() above
+```
+## Generate a parallelcoordinate plot
+```{r Generate a parallel coordinate plot}
+library(MASS) 
+
+parcoord(titanic[4:7], col = titanic$Survived, var.label = TRUE)
+
+parcoord(titanic[4:5], col = titanic$Survived, var.label = TRUE)
+
+parcoord(titanic[c(4,6)], col = titanic$Survived, var.label = TRUE)
+
+parcoord(titanic[c(4,7)], col = titanic$Survived, var.label = TRUE)
+
+parcoord(titanic[c(5,6)], col = titanic$Survived, var.label = TRUE)
+
+palette()
+
+legend('topright', legend = levels(titanic$Survived),  col = 1:2, cex = 0.8, pch = 1:2)
+
+##### end of Titanic Data Exploration Tutorial
+toc()
+```
