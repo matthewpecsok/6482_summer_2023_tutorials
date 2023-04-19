@@ -67,6 +67,10 @@ iris %>% nrow()
 
 #nrow(iris)
 ```
+
+The iris dataset has XXX rows. <- replace xxx with the correct number of rows. 
+
+
 ## ncol
 
 Get the number of columns. 
@@ -76,6 +80,9 @@ iris %>% ncol()
 
 #ncol(iris)
 ```
+
+The iris dataset has XXX columns <- replace xxx with the correct number of columns. 
+
 ## head
 
 ```{r head}
